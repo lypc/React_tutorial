@@ -1,15 +1,24 @@
-var data=[
-    {author:"lyss",text:"awedr"},
-    {author:"lyss",text:"awe"}
-];
 
 
 var CommentForm = React.createClass({
+    handleSubmit:function(e){
+        e.preventDefault();
+        var author=this.refs.author.value.trim();
+        var text = this.refs.text.value.trim();
+        if(!text||!author){
+            return;
+        }
+        this.refs.author.value ='';
+        this.refs.text.value='';
+        return;
+    },
     render: function() {
         return (
-            <div className="commentForm">
-            Hello, world! I am a CommentForm.
-        </div>
+            <form className="commentForm" onSubmit={this.handleSubmit}>
+                <input type="text" placeholder="Your name" ref="author"/>
+                <input type="text" placeholder="Say something" ref="text"/>
+                <input type="submit" value="Post" />
+            </form>
         );
     }
 });
@@ -45,11 +54,31 @@ var CommentList = React.createClass({
 });
 
 var CommentBox = React.createClass({
+    getInitialState:function(){
+        return{data:[]};
+    },
+    componentDidMount:function(){
+        this.loadCommentsFromServer();
+        setInterval(this.loadCommentFromServer,this.props.pollInterval);
+    },
+    loadCommentsFromServer:function(){
+        $.ajax({
+            url:this.props.url,
+            dataType:'json',
+            cache:false,
+            success:function(data){
+                this.setState({data:data});
+            }.bind(this),
+            error:function(xhr,status,err){
+                console.error(this.props.url,status,err.toString());
+            }.bind(this)
+        });
+    },
     render: function() {
         return (
             <div className="commentBox">
             <h1>Comments</h1>
-            <CommentList data={this.props.data} />
+            <CommentList data={this.state.data} />
         <CommentForm />
         </div>
         );
@@ -57,6 +86,6 @@ var CommentBox = React.createClass({
 });
 
 ReactDOM.render(
-    <CommentBox data={data} />,
+    <CommentBox url="/api/comments" pollInterval={2000} />,
     document.getElementById('content')
 );
